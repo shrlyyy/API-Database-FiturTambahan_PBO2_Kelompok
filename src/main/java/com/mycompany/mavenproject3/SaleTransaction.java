@@ -8,25 +8,25 @@ package com.mycompany.mavenproject3;
  *
  * @author ASUS
  */
-import java.util.ArrayList;
-import java.util.List;
+// import java.util.ArrayList;
+// import java.util.List;
 
-public class SaleTransaction {
-    private List<SaleItem> items = new ArrayList<>();
-    private String payMethod;
+// public class SaleTransaction {
+//     private List<SaleItem> items = new ArrayList<>();
+//     private String payMethod;
 
-    public String getPayMethod() { return payMethod; }
-    public void setPayMethod(String payMethod) { this.payMethod = payMethod; }
+//     public String getPayMethod() { return payMethod; }
+//     public void setPayMethod(String payMethod) { this.payMethod = payMethod; }
 
-    public void addItem(SaleItem item) {
-        items.add(item);
-    }
+//     public void addItem(SaleItem item) {
+//         items.add(item);
+//     }
 
-    public List<SaleItem> getItems() {
-        return items;
-    }
+//     public List<SaleItem> getItems() {
+//         return items;
+//     }
 
-    public double getTotal() {
-        return items.stream().mapToDouble(SaleItem::getTotalPrice).sum();
-    }
-}
+//     public double getTotal() {
+//         return items.stream().mapToDouble(SaleItem::getTotalPrice).sum();
+//     }
+// }

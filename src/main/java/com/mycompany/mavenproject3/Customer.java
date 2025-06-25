@@ -15,6 +15,8 @@ public class Customer {
     private Long phoneNumber;
     private String address;
 
+    private AuditInfo auditInfo = new AuditInfo();
+
     public Customer(String name, Long phoneNumber, String address) {
         this.id = String.format("C%03d", counter++);
         this.name = name;
@@ -32,4 +34,7 @@ public class Customer {
 
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+
+    public AuditInfo getAuditInfo() { return auditInfo; }
+    public void setAuditInfo(AuditInfo auditInfo) { this.auditInfo = auditInfo; }
 }

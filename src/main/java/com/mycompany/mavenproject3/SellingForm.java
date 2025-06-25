@@ -49,14 +49,17 @@ public class SellingForm extends JFrame {
         this.reservations = reservations;
 
         setTitle("WK. Cuan | Form Penjualan");
-        setSize(900, 600);
+        setSize(650, 450);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
         setLayout(new GridLayout(1, 2));
 
-        add(createCustomerPanel());
-        add(createSellingPanel());
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.addTab("Customer Info", createCustomerPanel());
+        tabbedPane.addTab("Transaksi Penjualan", createSellingPanel());
+
+        add(tabbedPane, BorderLayout.CENTER);
 
         updateCustomerFields();
         updateProductFields();

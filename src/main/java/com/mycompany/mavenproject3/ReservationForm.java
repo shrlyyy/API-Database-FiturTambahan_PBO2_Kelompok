@@ -36,18 +36,19 @@ public class ReservationForm extends JFrame {
     private boolean isEditing = false;
     private int editingReservationId = -1;
 
-
     private JTable reservationTable;
     private DefaultTableModel tableModel;
 
     private ArrayList<Customer> customers;
     private static ArrayList<Reservation> reservations = new ArrayList<>();
+    private String currentUser;
 
-    public ReservationForm(ArrayList<Customer> customers) {
+    public ReservationForm(ArrayList<Customer> customers, String currentUser) {
         this.customers = customers;
+        this.currentUser = currentUser;
 
         setTitle("WK. Cuan | Form Reservasi");
-        setSize(700, 400);
+        setSize(850, 400);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -108,7 +109,7 @@ public class ReservationForm extends JFrame {
         getContentPane().add(topPanel, BorderLayout.NORTH);
 
         // Tabel reservasi
-        tableModel = new DefaultTableModel(new String[]{"ID Reservasi", "ID Customer", "Nama", "Tanggal", "Jam", "Meja", "Jumlah Orang"}, 0);
+        tableModel = new DefaultTableModel(new String[]{"ID Reservasi", "ID Customer", "Nama", "Tanggal", "Jam", "Meja", "Jumlah Orang", "Last Action By:"}, 0);
         reservationTable = new JTable(tableModel);
         getContentPane().add(new JScrollPane(reservationTable), BorderLayout.CENTER);
 
@@ -236,35 +237,37 @@ public class ReservationForm extends JFrame {
 
             int customerId = Integer.parseInt(idCust.replaceAll("\\D+", ""));
 
-            if (isEditing && editingReservationId != -1) {
-                // MODE UPDATE
-                for (Reservation r : reservations) {
-                    if (r.getReservationId() == editingReservationId) {
-                        r.setCustomerId(customerId);
-                        r.setReservationDate(localDate);
-                        r.setReservationTime(localTime);
-                        r.setTable(table);
-                        r.setNumberOfPeople(numPeople);
-                        r.setEditedBy("admin");
-                        break;
-                    }
+        if (isEditing && editingReservationId != -1) {
+            for (Reservation r : reservations) {
+                if (r.getReservationId() == editingReservationId) {
+                    r.setCustomerId(customerId);
+                    r.setReservationDate(localDate);
+                    r.setReservationTime(localTime);
+                    r.setTable(table);
+                    r.setNumberOfPeople(numPeople);
+                    r.setEditedBy(currentUser); // ← diubah
+                    r.setCreatedBy(null);
+                    r.setDeletedBy(null);
+                    break;
                 }
-                JOptionPane.showMessageDialog(this, "Reservasi berhasil diperbarui.");
-            } else {
-                // MODE TAMBAH
-                int reservationId = reservations.size() + 1;
-                Reservation newRes = new Reservation(
-                    reservationId,
-                    customerId,
-                    localDate,
-                    localTime,
-                    table,
-                    numPeople,
-                    "admin", null, null
-                );
-                reservations.add(newRes);
-                JOptionPane.showMessageDialog(this, "Reservasi berhasil disimpan.");
             }
+            JOptionPane.showMessageDialog(this, "Reservasi berhasil diperbarui.");
+        } else {
+            int reservationId = reservations.size() + 1;
+            Reservation newRes = new Reservation(
+                reservationId,
+                customerId,
+                localDate,
+                localTime,
+                table,
+                numPeople,
+                currentUser, // ← createdBy
+                null,
+                null
+            );
+            reservations.add(newRes);
+            JOptionPane.showMessageDialog(this, "Reservasi berhasil disimpan.");
+        }
 
             clearFields();
             refreshTable();
@@ -324,16 +327,27 @@ public class ReservationForm extends JFrame {
             }
             String formattedReservationId = String.format("R%03d", r.getReservationId());
 
+            // Tambahkan logika lastAction
+            String lastActionBy = "-";
+            if (r.getDeletedBy() != null) {
+                lastActionBy = "Deleted by " + r.getDeletedBy();
+            } else if (r.getEditedBy() != null) {
+                lastActionBy = "Edited by " + r.getEditedBy();
+            } else if (r.getCreatedBy() != null) {
+                lastActionBy = "Created by " + r.getCreatedBy();
+            }
+
             tableModel.addRow(new Object[]{
-                formattedReservationId,       // ID Reservasi seperti R001
-                formattedCustomerId,          // ID Customer seperti C001
+                formattedReservationId,
+                formattedCustomerId,
                 custName,
                 r.getReservationDate(),
                 r.getReservationTime().format(timeFormatter),
                 r.getTable(),
-                r.getNumberOfPeople()
+                r.getNumberOfPeople(),
+                lastActionBy
             });
-        }        
+        }
     }
 
     public static ArrayList<Reservation> getReservations() {

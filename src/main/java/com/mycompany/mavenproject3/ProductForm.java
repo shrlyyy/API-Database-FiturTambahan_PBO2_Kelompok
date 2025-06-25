@@ -28,6 +28,7 @@ public class ProductForm extends JFrame {
     private List<Product> products;
     private boolean isEditing = false;
     private int editingIndex = -1;
+    private String currentUser;
 
     public interface ProductChangeListener {
         void onProductsChanged();
@@ -42,7 +43,9 @@ public class ProductForm extends JFrame {
         return products;
     }
 
-    public ProductForm() {
+    public ProductForm(String currentUser) {
+        this.currentUser = currentUser;
+
         products = new ArrayList<>();
         products.add(new Product(1, "P001", "Americano", "Coffee", 18000, 10));
         products.add(new Product(2, "P002", "Pandan Latte", "Coffee", 15000, 8));
@@ -51,7 +54,7 @@ public class ProductForm extends JFrame {
         products.add(new Product(5, "P005", "Jus Apel", "Juice", 22000, 9));
         
         setTitle("WK. Cuan | Stok Barang");
-        setSize(600, 450);
+        setSize(700, 450);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         
@@ -92,7 +95,7 @@ public class ProductForm extends JFrame {
 
         getContentPane().add(topPanel, BorderLayout.NORTH);
 
-        tableModel = new DefaultTableModel(new String[]{"Kode", "Nama", "Kategori", "Harga Jual", "Stok"}, 0);
+        tableModel = new DefaultTableModel(new String[]{"Kode", "Nama", "Kategori", "Harga Jual", "Stok", "Last Action By:"}, 0);
         drinkTable = new JTable(tableModel);
         getContentPane().add(new JScrollPane(drinkTable), BorderLayout.CENTER);
 
@@ -143,23 +146,21 @@ public class ProductForm extends JFrame {
                 double price = Double.parseDouble(priceField.getText());
                 int stock = Integer.parseInt(stockField.getText());
         
-                if (isEditing && editingIndex != -1) {
-                    // Mode edit
-                    Product existing = products.get(editingIndex);
-                    existing.setCode(code);
-                    existing.setName(name);
-                    existing.setCategory(category);
-                    existing.setPrice(price);
-                    existing.setStock(stock);
-                    
-                    isEditing = false;
-                    editingIndex = -1;
-                } else {
-                    // Mode tambah
-                    int id = products.size() + 1;
-                    Product newProduct = new Product(id, code, name, category, price, stock);
-                    products.add(newProduct);
-                }
+            if (isEditing && editingIndex != -1) {
+                Product existing = products.get(editingIndex);
+                existing.setCode(code);
+                existing.setName(name);
+                existing.setCategory(category);
+                existing.setPrice(price);
+                existing.setStock(stock);
+                existing.getAuditInfo().setEditedBy(currentUser);
+                existing.getAuditInfo().setCreatedBy(null); // Optional: clear createdBy
+            } else {
+                int id = products.size() + 1;
+                Product newProduct = new Product(id, code, name, category, price, stock);
+                newProduct.getAuditInfo().setCreatedBy(currentUser);
+                products.add(newProduct);
+            }
         
                 loadProductData(products);
                 if (listener != null) listener.onProductsChanged();
@@ -180,8 +181,24 @@ public class ProductForm extends JFrame {
     public void loadProductData(List<Product> productList) {
         tableModel.setRowCount(0);
         for (Product product : productList) {
+            String lastActionBy = "-";
+            AuditInfo audit = product.getAuditInfo();
+            
+            if (audit.getDeletedBy() != null) {
+                lastActionBy = "Deleted by " + audit.getDeletedBy();
+            } else if (audit.getEditedBy() != null) {
+                lastActionBy = "Edited by " + audit.getEditedBy();
+            } else if (audit.getCreatedBy() != null) {
+                lastActionBy = "Created by " + audit.getCreatedBy();
+            }
+
             tableModel.addRow(new Object[]{
-                product.getCode(), product.getName(), product.getCategory(), product.getPrice(), product.getStock()
+                product.getCode(),
+                product.getName(),
+                product.getCategory(),
+                product.getPrice(),
+                product.getStock(),
+                lastActionBy
             });
         }
     }

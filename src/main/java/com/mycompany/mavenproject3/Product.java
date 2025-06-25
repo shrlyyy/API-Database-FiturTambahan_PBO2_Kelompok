@@ -16,6 +16,8 @@ public class Product {
     private double price;
     private int stock;
 
+    private AuditInfo auditInfo = new AuditInfo();
+
     public Product(int id, String code, String name, String category, double price, int stock) {
         this.id = id;
         this.code = code;
@@ -42,4 +44,7 @@ public class Product {
     
     public int getStock() { return stock; }
     public void setStock(int stock) { this.stock = stock; }
+
+    public AuditInfo getAuditInfo() { return auditInfo; }
+    public void setAuditInfo(AuditInfo auditInfo) { this.auditInfo = auditInfo; }
 }

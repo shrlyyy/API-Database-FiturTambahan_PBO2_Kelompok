@@ -22,6 +22,8 @@ public class Reservation {
     private String editedBy;
     private String deletedBy;
 
+    private AuditInfo auditInfo = new AuditInfo();
+
     public Reservation(int reservationId, int customerId, LocalDate reservationDate, LocalTime reservationTime, String table, int numberOfPeople, String createdBy, String editedBy, String deletedBy) {
         this.reservationId = reservationId;
         this.customerId = customerId;
@@ -60,5 +62,8 @@ public class Reservation {
 
     public String getDeletedBy() { return deletedBy; }
     public void setDeletedBy(String deletedBy) { this.deletedBy = deletedBy; }
+
+    public AuditInfo getAuditInfo() { return auditInfo; }
+    public void setAuditInfo(AuditInfo auditInfo) { this.auditInfo = auditInfo; }
 }
 

@@ -26,12 +26,14 @@ public class CustomerForm extends JFrame {
     private ArrayList<Customer> customers;
     private boolean isEditing = false;
     private int editingIndex = -1;
+    private String currentUser;
 
-    public CustomerForm(ArrayList<Customer> customers) {
-        this.customers = customers; 
+    public CustomerForm(ArrayList<Customer> customers, String currentUser) {
+        this.customers = customers;
+        this.currentUser = currentUser; 
         
         setTitle("WK. Cuan | Form Customer");
-        setSize(600, 300);
+        setSize(700, 300);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -65,7 +67,7 @@ public class CustomerForm extends JFrame {
         getContentPane().add(topPanel, BorderLayout.NORTH);
 
         // Tabel
-        tableModel = new DefaultTableModel(new String[]{"ID", "Nama", "Nomor Telepon", "Alamat"}, 0);
+        tableModel = new DefaultTableModel(new String[]{"ID", "Nama", "Nomor Telepon", "Alamat", "Last Action By:"}, 0);
         customerTable = new JTable(tableModel);
         getContentPane().add(new JScrollPane(customerTable), BorderLayout.CENTER);
 
@@ -128,28 +130,25 @@ public class CustomerForm extends JFrame {
 
             if (isEditing && editingIndex != -1) {
                 Customer existing = customers.get(editingIndex);
-                // Jika nomor berubah, pastikan belum digunakan
                 if (!existing.getPhoneNumber().toString().equals(phoneText) && registeredPhones.contains(phoneText)) {
                     JOptionPane.showMessageDialog(this, "Nomor telepon sudah terdaftar!");
                     return;
                 }
-
                 registeredPhones.remove(existing.getPhoneNumber().toString());
                 registeredPhones.add(phoneText);
 
                 existing.setName(name);
                 existing.setPhoneNumber(phoneNumber);
                 existing.setAddress(address);
-                isEditing = false;
-                editingIndex = -1;
-
+                existing.getAuditInfo().setEditedBy(currentUser);
+                existing.getAuditInfo().setCreatedBy(null); // Optional: clear createdBy
             } else {
-                // Tambah baru
                 if (registeredPhones.contains(phoneText)) {
                     JOptionPane.showMessageDialog(this, "Nomor telepon sudah terdaftar!");
                     return;
                 }
                 Customer newCustomer = new Customer(name, phoneNumber, address);
+                newCustomer.getAuditInfo().setCreatedBy(currentUser);
                 customers.add(newCustomer);
                 registeredPhones.add(phoneText);
             }
@@ -170,11 +169,22 @@ public class CustomerForm extends JFrame {
     private void refreshTable() {
         tableModel.setRowCount(0);
         for (Customer c : customers) {
+            String lastActionBy = "-";
+            AuditInfo audit = c.getAuditInfo();
+            if (audit.getDeletedBy() != null) {
+                lastActionBy = "Deleted by " + audit.getDeletedBy();
+            } else if (audit.getEditedBy() != null) {
+                lastActionBy = "Edited by " + audit.getEditedBy();
+            } else if (audit.getCreatedBy() != null) {
+                lastActionBy = "Created by " + audit.getCreatedBy();
+            }
+
             tableModel.addRow(new Object[]{
                 c.getId(),
                 c.getName(),
                 c.getPhoneNumber(),
-                c.getAddress()
+                c.getAddress(),
+                lastActionBy
             });
         }
     }
