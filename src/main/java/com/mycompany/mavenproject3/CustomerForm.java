@@ -11,6 +11,7 @@ package com.mycompany.mavenproject3;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 public class CustomerForm extends JFrame {
@@ -27,11 +28,12 @@ public class CustomerForm extends JFrame {
     private boolean isEditing = false;
     private int editingIndex = -1;
     private String currentUser;
+    private CustomerDAO customerDAO;
 
     public CustomerForm(ArrayList<Customer> customers, String currentUser) {
         this.customers = customers;
-        this.currentUser = currentUser; 
-        
+        this.currentUser = currentUser;
+
         setTitle("WK. Cuan | Form Customer");
         setSize(700, 300);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -71,18 +73,40 @@ public class CustomerForm extends JFrame {
         customerTable = new JTable(tableModel);
         getContentPane().add(new JScrollPane(customerTable), BorderLayout.CENTER);
 
+        try {
+            customerDAO = new CustomerDAO();
+            customers.clear();
+            customers.addAll(customerDAO.getAllCustomers());
+            registeredPhones.clear();
+            for (Customer c : customers) {
+                registeredPhones.add(c.getPhoneNumber().toString());
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Gagal koneksi/muat data: " + e.getMessage());
+        }
+
+        refreshTable();
+
         // Event tombol
         saveButton.addActionListener(e -> saveCustomer());
 
         deleteButton.addActionListener(e -> {
             int selectedRow = customerTable.getSelectedRow();
             if (selectedRow != -1) {
-                Customer removed = customers.remove(selectedRow);
-                registeredPhones.remove(removed.getPhoneNumber().toString());
-                refreshTable();
-                clearFields();
-                isEditing = false;
-                editingIndex = -1;
+                Customer removed = customers.get(selectedRow);
+                try {
+                    // Panggil dengan dua parameter id dan username yang menghapus
+                    customerDAO.deleteCustomer(removed.getId(), currentUser);
+                    
+                    customers.remove(selectedRow);
+                    registeredPhones.remove(removed.getPhoneNumber().toString());
+                    refreshTable();
+                    clearFields();
+                    isEditing = false;
+                    editingIndex = -1;
+                } catch (SQLException ex) {
+                    JOptionPane.showMessageDialog(this, "Gagal menghapus dari database: " + ex.getMessage());
+                }
             } else {
                 JOptionPane.showMessageDialog(this, "Pilih customer untuk dihapus.");
             }
@@ -105,9 +129,6 @@ public class CustomerForm extends JFrame {
                 }
             }
         });
-
-        // Muat awal (jika perlu)
-        refreshTable();
     }
 
     private void saveCustomer() {
@@ -141,20 +162,44 @@ public class CustomerForm extends JFrame {
                 existing.setPhoneNumber(phoneNumber);
                 existing.setAddress(address);
                 existing.getAuditInfo().setEditedBy(currentUser);
-                existing.getAuditInfo().setCreatedBy(null); // Optional: clear createdBy
+
+                try {
+                    customerDAO.updateCustomer(existing);
+                    // reload data dari DB agar update audit info dan lain2 sinkron
+                    customers.clear();
+                    customers.addAll(customerDAO.getAllCustomers());
+                    registeredPhones.clear();
+                    for (Customer c : customers) {
+                        registeredPhones.add(c.getPhoneNumber().toString());
+                    }
+                } catch (SQLException e) {
+                    JOptionPane.showMessageDialog(this, "Gagal update ke database: " + e.getMessage());
+                }
             } else {
                 if (registeredPhones.contains(phoneText)) {
                     JOptionPane.showMessageDialog(this, "Nomor telepon sudah terdaftar!");
                     return;
                 }
+
                 Customer newCustomer = new Customer(name, phoneNumber, address);
                 newCustomer.getAuditInfo().setCreatedBy(currentUser);
-                customers.add(newCustomer);
-                registeredPhones.add(phoneText);
+                try {
+                    customerDAO.insertCustomer(newCustomer);
+                    customers.clear();
+                    customers.addAll(customerDAO.getAllCustomers());
+                    registeredPhones.clear();
+                    for (Customer c : customers) {
+                        registeredPhones.add(c.getPhoneNumber().toString());
+                    }
+                } catch (SQLException e) {
+                    JOptionPane.showMessageDialog(this, "Gagal simpan ke database: " + e.getMessage());
+                }
             }
 
             refreshTable();
             clearFields();
+            isEditing = false;
+            editingIndex = -1;
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Input tidak valid!", "Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -171,11 +216,11 @@ public class CustomerForm extends JFrame {
         for (Customer c : customers) {
             String lastActionBy = "-";
             AuditInfo audit = c.getAuditInfo();
-            if (audit.getDeletedBy() != null) {
+            if (audit.getDeletedBy() != null && !audit.getDeletedBy().isEmpty()) {
                 lastActionBy = "Deleted by " + audit.getDeletedBy();
-            } else if (audit.getEditedBy() != null) {
+            } else if (audit.getEditedBy() != null && !audit.getEditedBy().isEmpty()) {
                 lastActionBy = "Edited by " + audit.getEditedBy();
-            } else if (audit.getCreatedBy() != null) {
+            } else if (audit.getCreatedBy() != null && !audit.getCreatedBy().isEmpty()) {
                 lastActionBy = "Created by " + audit.getCreatedBy();
             }
 
