@@ -11,7 +11,9 @@ package com.mycompany.mavenproject3;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.sql.SQLException;
 import java.util.HashMap;
+import java.lang.ClassNotFoundException;
 
 public class LoginForm extends JFrame {
     private JTextField usernameField;
@@ -21,10 +23,16 @@ public class LoginForm extends JFrame {
     private HashMap<String, String> cashierAccounts;
     private Mavenproject3 mainApp;
 
+    private Cashier loggedInCashier;
+
     // Konstruktor dengan referensi main app
     public LoginForm(Mavenproject3 mainApp) {
         this();
         this.mainApp = mainApp;
+}
+
+    public Cashier getLoggedInCashier() {
+        return loggedInCashier;
     }
 
     // Konstruktor default (inisialisasi UI)
@@ -34,11 +42,6 @@ public class LoginForm extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new GridLayout(3, 1));
-
-        // Inisialisasi akun kasir
-        cashierAccounts = new HashMap<>();
-        cashierAccounts.put("kasir01", "aitibieses");
-        cashierAccounts.put("kasir02", "mantapbetul");
 
         // Panel Username
         JPanel userPanel = new JPanel(new FlowLayout());
@@ -68,17 +71,23 @@ public class LoginForm extends JFrame {
         String username = usernameField.getText().trim();
         String password = new String(passwordField.getPassword());
 
-        if (cashierAccounts.containsKey(username) && cashierAccounts.get(username).equals(password)) {
-            JOptionPane.showMessageDialog(this, "Login berhasil. Selamat datang, " + username + "!");
+        try {
+            UserDAO userDAO = new UserDAO();  // Tidak throws lagi
+            Cashier cashier = userDAO.login(username, password);
+            userDAO.close();
 
-            // Panggil callback di main app kalau ada
-            if (mainApp != null) {
-                mainApp.onLoginSuccess(username);
+            if (cashier != null) {
+                JOptionPane.showMessageDialog(this, "Login berhasil. Selamat datang, " + cashier.getUsername() + "!");
+                if (mainApp != null) {
+                    mainApp.onLoginSuccess(cashier);
+                }
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Login gagal. Cek kembali username dan password.");
             }
-
-            dispose(); // Tutup login form
-        } else {
-            JOptionPane.showMessageDialog(this, "Login gagal. Cek kembali username dan password.");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Kesalahan koneksi ke database.");
         }
     }
 

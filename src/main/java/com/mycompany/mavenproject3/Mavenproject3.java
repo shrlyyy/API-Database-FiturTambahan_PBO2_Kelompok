@@ -26,7 +26,7 @@ public class Mavenproject3 extends JFrame implements Runnable {
     private JButton customerButton;
     private JButton reservationButton;
     private JButton logoutButton;
-    private String currentUser;
+    private Cashier currentUser;
     private ProductForm form;
 
     private ArrayList<Customer> sharedCustomers = new ArrayList<>();
@@ -80,7 +80,7 @@ public class Mavenproject3 extends JFrame implements Runnable {
         });
 
         customerButton.addActionListener(e -> {
-        CustomerForm customerForm = new CustomerForm(sharedCustomers, currentUser);
+        CustomerForm customerForm = new CustomerForm(sharedCustomers, currentUser.getUsername());
         customerForm.setVisible(true);
         });
 
@@ -90,7 +90,7 @@ public class Mavenproject3 extends JFrame implements Runnable {
         });
 
         reservationButton.addActionListener(e -> {
-            ReservationForm reservationForm = new ReservationForm(sharedCustomers, currentUser);
+            ReservationForm reservationForm = new ReservationForm(sharedCustomers, currentUser.getUsername());
             reservationForm.setVisible(true);
         });
 
@@ -107,11 +107,15 @@ public class Mavenproject3 extends JFrame implements Runnable {
         login.setVisible(true);
     }
 
-    public void onLoginSuccess(String username) {
-        this.currentUser = username;
+    public void onLoginSuccess(Cashier cashier) {
+        this.currentUser = cashier; 
 
         form = new ProductForm(currentUser);
-        form.setProductChangeListener(() -> SwingUtilities.invokeLater(() -> updateBannerText(form.getProductBannerText())));
+        form.setProductChangeListener(() ->
+            SwingUtilities.invokeLater(() ->
+                updateBannerText(form.getProductBannerText())
+            )
+        );
 
         updateBannerText(form.getProductBannerText());
 

@@ -28,7 +28,7 @@ public class ProductForm extends JFrame {
     private List<Product> products;
     private boolean isEditing = false;
     private int editingIndex = -1;
-    private String currentUser;
+    private Cashier currentUser;
 
     public interface ProductChangeListener {
         void onProductsChanged();
@@ -43,7 +43,7 @@ public class ProductForm extends JFrame {
         return products;
     }
 
-    public ProductForm(String currentUser) {
+    public ProductForm(Cashier currentUser) {
         this.currentUser = currentUser;
 
         products = new ArrayList<>();
@@ -153,12 +153,12 @@ public class ProductForm extends JFrame {
                 existing.setCategory(category);
                 existing.setPrice(price);
                 existing.setStock(stock);
-                existing.getAuditInfo().setEditedBy(currentUser);
+                existing.getAuditInfo().setEditedBy(currentUser.getUsername());
                 existing.getAuditInfo().setCreatedBy(null); // Optional: clear createdBy
             } else {
                 int id = products.size() + 1;
                 Product newProduct = new Product(id, code, name, category, price, stock);
-                newProduct.getAuditInfo().setCreatedBy(currentUser);
+                newProduct.getAuditInfo().setCreatedBy(currentUser.getUsername());
                 products.add(newProduct);
             }
         
