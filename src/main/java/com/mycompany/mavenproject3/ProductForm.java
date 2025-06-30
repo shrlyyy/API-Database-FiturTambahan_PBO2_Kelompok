@@ -201,7 +201,7 @@ public class ProductForm extends JFrame {
                     product.getCode(),
                     product.getName(),
                     product.getCategory(),
-                    product.getPrice(),
+                    Currency.formatRupiah(product.getPrice()),
                     product.getStock(),
                     lastAction
                 });

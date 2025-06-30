@@ -313,9 +313,9 @@ public class SellingForm extends JFrame {
             cartItems.add(new SaleItem(product, qty));
             cartTableModel.addRow(new Object[]{
                 product.getName(),
-                product.getPrice(),
+                Currency.formatRupiah(product.getPrice()),
                 qty,
-                subtotal
+                Currency.formatRupiah(subtotal)
             });
         }
 
@@ -361,10 +361,10 @@ public class SellingForm extends JFrame {
 
     private void updateTotal() {
         double total = 0;
-        for (int i = 0; i < cartTableModel.getRowCount(); i++) {
-            total += (double) cartTableModel.getValueAt(i, 3);
+        for (SaleItem item : cartItems) {
+            total += item.getSubTotal();
         }
-        totalPriceField.setText("Rp " + total);
+        totalPriceField.setText(Currency.formatRupiah(total));
     }
 
     private void checkout(ActionEvent e) {
@@ -392,10 +392,10 @@ public class SellingForm extends JFrame {
             }
         }
 
-if (customerId == null) {
-    JOptionPane.showMessageDialog(this, "Customer tidak ditemukan.");
-    return;
-}
+    if (customerId == null) {
+        JOptionPane.showMessageDialog(this, "Customer tidak ditemukan.");
+        return;
+    }
 
 
             LocalDate orderDate = LocalDate.now();
