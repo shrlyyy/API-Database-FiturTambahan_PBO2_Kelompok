@@ -9,6 +9,7 @@ package com.mycompany.mavenproject3;
  * @author ASUS
  */
 public class SaleItem {
+    private int id;
     private int saleId;
     private Product product;
     private int quantity;
@@ -18,6 +19,8 @@ public class SaleItem {
         this.quantity = quantity;
     }
 
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
     public int getSaleId() { return saleId; }
     public void setSaleId(int saleId) { this.saleId = saleId; }
     public Product getProduct() { return product; }

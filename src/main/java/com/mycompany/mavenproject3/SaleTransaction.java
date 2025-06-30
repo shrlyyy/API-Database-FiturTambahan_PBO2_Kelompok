@@ -15,15 +15,15 @@ import java.time.LocalTime;
 public class SaleTransaction {
     private int id;
     private int customerId;
-    private String cashierName;
+    private int cashierId;
     private LocalDate date;
     private LocalTime time;
     private List<SaleItem> saleItems;
 
- public SaleTransaction(int id, int customerId, String cashierName, LocalDate date, LocalTime time, List<SaleItem> saleItems) {
+ public SaleTransaction(int id, int customerId, int cashierId, LocalDate date, LocalTime time, List<SaleItem> saleItems) {
         this.id = id;
         this.customerId = customerId;
-        this.cashierName = cashierName;
+        this.cashierId = cashierId;
         this.date = date;
         this.time = time;
         this.saleItems = saleItems;
@@ -33,8 +33,8 @@ public class SaleTransaction {
     public void setId(int id) { this.id = id; }
     public int getCustomerId() { return customerId; }
     public void setCustomerId(int customerId) { this.customerId = customerId; }
-    public String getCashierName() { return cashierName; }
-    public void setCashierName(String cashierName) { this.cashierName = cashierName; }
+    public int getCashierId() { return cashierId; }
+    public void setCashierId(int cashierId) { this.cashierId = cashierId; }
     public LocalDate getDate() { return date; }
     public void setDate(LocalDate date) { this.date = date; }
     public LocalTime getTime() { return time; }

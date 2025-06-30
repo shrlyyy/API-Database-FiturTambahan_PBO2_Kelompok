@@ -18,6 +18,9 @@ import java.awt.event.ActionEvent;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
 public class SellingForm extends JFrame {
     private JComboBox<String> customerComboBox;
@@ -338,38 +341,69 @@ public class SellingForm extends JFrame {
             return;
         }
 
-        for (SaleItem item : cartItems) {
-            Product p = item.getProduct();
-            int qty = item.getQuantity();
-            p.setStock(p.getStock() - qty);
+        // Contoh koneksi JDBC (ubah sesuai konfigurasi kamu)
+        String url = "jdbc:mysql://localhost:3306/namadb";
+        String username = "root";
+        String password = "";
+
+        try (Connection conn = DriverManager.getConnection(url, username, password)) {
+            conn.setAutoCommit(false); // transaction manual
+
+            SaleTransactionDAO saleDAO = new SaleTransactionDAO(conn);
+            SaleItemDAO itemDAO = new SaleItemDAO(conn);
+
+            // Ambil customerId dari customerComboBox
+            int customerId = -1;
+            String selectedPhone = (String) customerComboBox.getSelectedItem();
+            for (Customer c : customers) {
+                if (c.getPhoneNumber().toString().equals(selectedPhone)) {
+                    customerId = Integer.parseInt(c.getId().replaceAll("\\D+", ""));
+                    break;
+                }
+            }
+
+            LocalDate tanggalPesan = LocalDate.now();
+            LocalTime waktuPesan = LocalTime.now();
+
+            // Buat objek SaleTransaction tanpa saleItems dulu, karena id belum ada
+            SaleTransaction sale = new SaleTransaction(0, customerId, "kasir1", tanggalPesan, waktuPesan, cartItems);
+
+            // Simpan transaksi dan dapatkan ID
+            int saleId = saleDAO.insertSaleTransaction(sale);
+
+            // Simpan setiap saleItem dengan saleId yg baru
+            for (SaleItem item : cartItems) {
+                itemDAO.insertSaleItem(item, saleId);
+                // Kurangi stok produk sesuai qty
+                Product p = item.getProduct();
+                p.setStock(p.getStock() - item.getQuantity());
+            }
+
+            conn.commit();
+
+            productForm.loadProductData(products);
+            updateProductFields();
+
+            DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+            DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm");
+            dateField.setText(tanggalPesan.format(dateFormat));
+            timeField.setText(waktuPesan.format(timeFormat));
+
+            String customerName = nameField.getText();
+            String message = "Checkout berhasil untuk " + customerName + " (" + selectedPhone + ")!\n"
+                + "Tanggal: " + tanggalPesan.format(dateFormat) + "\n"
+                + "Waktu: " + waktuPesan.format(timeFormat) + "\n"
+                + "Total: Rp " + sale.getTotalPrice();
+            JOptionPane.showMessageDialog(this, message);
+
+            cartItems.clear();
+            cartTableModel.setRowCount(0);
+            updateTotal();
+
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error saat menyimpan transaksi: " + ex.getMessage());
+            ex.printStackTrace();
         }
-
-        productForm.loadProductData(products);
-        updateProductFields();
-
-        LocalDate tanggalPesan = LocalDate.now();
-        LocalTime waktuPesan = LocalTime.now();
-
-        DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm");
-
-        String tanggalStr = tanggalPesan.format(dateFormat);
-        String waktuStr = waktuPesan.format(timeFormat);
-
-        dateField.setText(tanggalStr);
-        timeField.setText(waktuStr);
-
-        String customerPhone = (String) customerComboBox.getSelectedItem();
-        String customerName = nameField.getText();
-        String message = "Checkout berhasil untuk " + customerName + " (" + customerPhone + ")!\n"
-            + "Tanggal: " + tanggalStr + "\n"
-            + "Waktu: " + waktuStr + "\n"
-            + "Total: " + totalPriceField.getText();
-        JOptionPane.showMessageDialog(this, message);
-
-        cartItems.clear();
-        cartTableModel.setRowCount(0);
-        updateTotal();
     }
-
 }
+
