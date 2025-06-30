@@ -9,6 +9,7 @@ package com.mycompany.mavenproject3;
  * @author ASUS
  */
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
@@ -19,13 +20,23 @@ public class SaleItemDAO {
         this.conn = conn;
     }
 
+    public SaleItemDAO() throws SQLException, ClassNotFoundException {
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        conn = DriverManager.getConnection(
+            "jdbc:mysql://localhost:3306/fiturtambahan-pbo2",
+            "root", ""
+        );
+}
+
     public void insertSaleItem(SaleItem item, int saleId) throws SQLException {
-        String sql = "INSERT INTO saleitem (saleId, productId, quantity, subtotal) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO saleitem (saleId, productId, productName, price, quantity, subtotal) VALUES (?, ?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, saleId);
             stmt.setInt(2, item.getProductId());
-            stmt.setInt(3, item.getQuantity());
-            stmt.setDouble(4, item.getSubTotal());
+            stmt.setString(3, item.getProductName());
+            stmt.setDouble(4, item.getPrice());
+            stmt.setInt(5, item.getQuantity());
+            stmt.setDouble(6, item.getSubTotal());
             stmt.executeUpdate();
         }
     }

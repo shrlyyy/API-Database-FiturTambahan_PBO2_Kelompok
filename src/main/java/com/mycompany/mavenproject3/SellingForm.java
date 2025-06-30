@@ -9,6 +9,7 @@ package com.mycompany.mavenproject3;
  * @author ASUS
  */
 import javax.swing.*;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
@@ -21,6 +22,9 @@ import java.time.format.DateTimeFormatter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import java.util.Objects;
 
 public class SellingForm extends JFrame {
     private JComboBox<String> customerComboBox;
@@ -36,7 +40,7 @@ public class SellingForm extends JFrame {
     private JButton checkoutButton;
     private JTextField dateField;
     private JTextField timeField;
-
+    private JTextField idField;
 
     private JTable cartTable;
     private DefaultTableModel cartTableModel;
@@ -50,12 +54,14 @@ public class SellingForm extends JFrame {
 
     private boolean isEditingCart = false;
     private int editingCartIndex = -1;
+    private String currentUser;
 
-    public SellingForm(ProductForm productForm, List<Customer> customers, List<Reservation> reservations) {
+    public SellingForm(ProductForm productForm, List<Customer> customers, List<Reservation> reservations, String currentUser) {
         this.productForm = productForm;
         this.products = productForm.getProducts();
         this.customers = customers;
         this.reservations = reservations;
+        this.currentUser = currentUser;
 
         setTitle("WK. Cuan | Form Penjualan");
         setSize(650, 450);
@@ -84,22 +90,44 @@ public class SellingForm extends JFrame {
     }
 
     private JPanel createCustomerPanel() {
-        JPanel panel = new JPanel(new GridLayout(4, 2, 5, 5));
+        JPanel panel = new JPanel(new GridLayout(5, 2, 5, 5));
         panel.setBorder(BorderFactory.createTitledBorder("Customer Info"));
 
         panel.add(new JLabel("Nomor Telepon:"));
         customerComboBox = new JComboBox<>();
         customerComboBox.setEditable(true);
         for (Customer c : customers) {
-            customerComboBox.addItem(c.getPhoneNumber().toString());
+            customerComboBox.addItem(c.getPhoneNumber());
         }
-        customerComboBox.addActionListener(e -> updateCustomerFields());
         panel.add(customerComboBox);
+
+        JTextField editor = (JTextField) customerComboBox.getEditor().getEditorComponent();
+        editor.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateCustomerFields();
+            }
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateCustomerFields();
+            }
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateCustomerFields();
+            }
+        });
+
+        customerComboBox.addActionListener(e -> updateCustomerFields());
 
         panel.add(new JLabel("Nama Customer:"));
         nameField = new JTextField();
         nameField.setEditable(false);
         panel.add(nameField);
+
+        panel.add(new JLabel("ID Customer:"));
+        idField = new JTextField();
+        idField.setEditable(false);
+        panel.add(idField);
 
         panel.add(new JLabel("Reservasi:"));
         reservationField = new JTextField();
@@ -210,16 +238,18 @@ public class SellingForm extends JFrame {
     }
 
     private void updateCustomerFields() {
-        String selectedPhone = (String) customerComboBox.getSelectedItem();
-        if (selectedPhone == null || selectedPhone.trim().isEmpty()) {
+        String input = ((JTextField) customerComboBox.getEditor().getEditorComponent()).getText().trim();
+
+        if (input.isEmpty()) {
             nameField.setText("");
+            idField.setText("");
             reservationField.setText("");
             return;
         }
 
         Customer matchedCustomer = null;
         for (Customer c : customers) {
-            if (c.getPhoneNumber().toString().equals(selectedPhone.trim())) {
+            if (c.getPhoneNumber().startsWith(input)) {
                 matchedCustomer = c;
                 break;
             }
@@ -227,19 +257,21 @@ public class SellingForm extends JFrame {
 
         if (matchedCustomer != null) {
             nameField.setText(matchedCustomer.getName());
+            idField.setText(matchedCustomer.getId());
 
-            // Cek apakah customer punya reservasi
-            boolean hasReservation = false;
-            int custIdNum = Integer.parseInt(matchedCustomer.getId().replaceAll("\\D+", ""));
+            String resInfo = "-";
             for (Reservation r : reservations) {
-                if (r.getCustomerId() == custIdNum) {
-                    hasReservation = true;
+
+                if (r.getCustomerId() != null && matchedCustomer.getId() != null &&
+                r.getCustomerId().trim().equalsIgnoreCase(matchedCustomer.getId().trim())) {
+                    resInfo = "Ada reservasi pada " + r.getReservationDate().toString();
                     break;
                 }
             }
-            reservationField.setText(hasReservation ? "Ada Reservasi" : "Tidak Ada Reservasi");
+            reservationField.setText(resInfo);
         } else {
             nameField.setText("");
+            idField.setText("");
             reservationField.setText("");
         }
     }
@@ -341,8 +373,7 @@ public class SellingForm extends JFrame {
             return;
         }
 
-        // Contoh koneksi JDBC (ubah sesuai konfigurasi kamu)
-        String url = "jdbc:mysql://localhost:3306/namadb";
+        String url = "jdbc:mysql://localhost:3306/fiturtambahan-pbo2";
         String username = "root";
         String password = "";
 
@@ -352,29 +383,30 @@ public class SellingForm extends JFrame {
             SaleTransactionDAO saleDAO = new SaleTransactionDAO(conn);
             SaleItemDAO itemDAO = new SaleItemDAO(conn);
 
-            // Ambil customerId dari customerComboBox
-            int customerId = -1;
-            String selectedPhone = (String) customerComboBox.getSelectedItem();
-            for (Customer c : customers) {
-                if (c.getPhoneNumber().toString().equals(selectedPhone)) {
-                    customerId = Integer.parseInt(c.getId().replaceAll("\\D+", ""));
-                    break;
-                }
+        String selectedPhone = (String) customerComboBox.getSelectedItem();
+        String customerId = null;
+        for (Customer c : customers) {
+            if (c.getPhoneNumber().equals(selectedPhone)) {
+                customerId = c.getId();
+                break;
             }
+        }
 
-            LocalDate tanggalPesan = LocalDate.now();
-            LocalTime waktuPesan = LocalTime.now();
+if (customerId == null) {
+    JOptionPane.showMessageDialog(this, "Customer tidak ditemukan.");
+    return;
+}
 
-            // Buat objek SaleTransaction tanpa saleItems dulu, karena id belum ada
-            SaleTransaction sale = new SaleTransaction(0, customerId, "kasir1", tanggalPesan, waktuPesan, cartItems);
 
-            // Simpan transaksi dan dapatkan ID
+            LocalDate orderDate = LocalDate.now();
+            LocalTime orderTime = LocalTime.now();
+
+            SaleTransaction sale = new SaleTransaction(0, customerId, currentUser, orderDate, orderTime, cartItems);
+
             int saleId = saleDAO.insertSaleTransaction(sale);
 
-            // Simpan setiap saleItem dengan saleId yg baru
             for (SaleItem item : cartItems) {
                 itemDAO.insertSaleItem(item, saleId);
-                // Kurangi stok produk sesuai qty
                 Product p = item.getProduct();
                 p.setStock(p.getStock() - item.getQuantity());
             }
@@ -386,13 +418,13 @@ public class SellingForm extends JFrame {
 
             DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
             DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm");
-            dateField.setText(tanggalPesan.format(dateFormat));
-            timeField.setText(waktuPesan.format(timeFormat));
+            dateField.setText(orderDate.format(dateFormat));
+            timeField.setText(orderTime.format(timeFormat));
 
             String customerName = nameField.getText();
             String message = "Checkout berhasil untuk " + customerName + " (" + selectedPhone + ")!\n"
-                + "Tanggal: " + tanggalPesan.format(dateFormat) + "\n"
-                + "Waktu: " + waktuPesan.format(timeFormat) + "\n"
+                + "Tanggal: " + orderDate.format(dateFormat) + "\n"
+                + "Waktu: " + orderTime.format(timeFormat) + "\n"
                 + "Total: Rp " + sale.getTotalPrice();
             JOptionPane.showMessageDialog(this, message);
 

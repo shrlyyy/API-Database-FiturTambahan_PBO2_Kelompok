@@ -20,11 +20,19 @@ public class SaleTransactionDAO {
         this.conn = conn;
     }
 
+    public SaleTransactionDAO() throws SQLException, ClassNotFoundException {
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        conn = DriverManager.getConnection(
+            "jdbc:mysql://localhost:3306/fiturtambahan-pbo2",
+            "root", ""
+        );
+}
+
     public int insertSaleTransaction(SaleTransaction sale) throws SQLException {
-        String sql = "INSERT INTO saletransaction (customerId, cashierId, date, time) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO saletransaction (customerId, cashierName, date, time) VALUES (?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setInt(1, sale.getCustomerId());
-            stmt.setInt(2, 1); 
+            stmt.setString(1, sale.getCustomerId());
+            stmt.setString(2, sale.getCashierName());
             stmt.setDate(3, Date.valueOf(sale.getDate()));
             stmt.setTime(4, Time.valueOf(sale.getTime()));
             int affectedRows = stmt.executeUpdate();
@@ -34,12 +42,13 @@ public class SaleTransactionDAO {
             }
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
-                    return generatedKeys.getInt(1);  // id transaksi yang baru
+                    return generatedKeys.getInt(1);
                 } else {
                     throw new SQLException("Membuat transaksi gagal, tidak dapat memperoleh ID.");
                 }
             }
         }
     }
+
 }
 

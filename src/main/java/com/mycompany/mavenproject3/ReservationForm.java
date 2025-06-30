@@ -34,7 +34,7 @@ public class ReservationForm extends JFrame {
     private JButton saveButton;
     private JButton deleteButton;
     private boolean isEditing = false;
-    private int editingReservationId = -1;
+    private String editingReservationId = null;
 
     private JTable reservationTable;
     private DefaultTableModel tableModel;
@@ -60,9 +60,9 @@ public class ReservationForm extends JFrame {
         formPanel.add(new JLabel("Nomor Telepon:"));
         phoneComboBox = new JComboBox<>();
         phoneComboBox.setEditable(true);
-        // Isi combo box dengan semua nomor telepon customer
+
         for (Customer c : customers) {
-            phoneComboBox.addItem(c.getPhoneNumber().toString());
+            phoneComboBox.addItem(c.getPhoneNumber());
         }
         formPanel.add(phoneComboBox);
 
@@ -121,7 +121,6 @@ public class ReservationForm extends JFrame {
             JOptionPane.showMessageDialog(this, "Gagal load reservasi: " + e.getMessage());
         }
 
-        // Listener untuk input realtime di phoneComboBox editable
         JTextField editor = (JTextField) phoneComboBox.getEditor().getEditorComponent();
         editor.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -146,10 +145,9 @@ public class ReservationForm extends JFrame {
                 int selectedRow = reservationTable.getSelectedRow();
                 if (selectedRow != -1) {
                     String resIdStr = tableModel.getValueAt(selectedRow, 0).toString(); // R001
-                    editingReservationId = Integer.parseInt(resIdStr.replaceAll("\\D+", ""));
+                    editingReservationId = resIdStr;
                     isEditing = true;
 
-                    // Lanjutkan isi field seperti sebelumnya
                     String custIdStr = tableModel.getValueAt(selectedRow, 1).toString();
                     Object custNameObj = tableModel.getValueAt(selectedRow, 2);
                     Object dateObj = tableModel.getValueAt(selectedRow, 3);
@@ -186,7 +184,7 @@ public class ReservationForm extends JFrame {
     private String getPhoneByCustomerId(String custId) {
         for (Customer c : customers) {
             if (c.getId().equals(custId)) {
-                return c.getPhoneNumber().toString();
+                return c.getPhoneNumber();
             }
         }
         return "";
@@ -202,7 +200,7 @@ public class ReservationForm extends JFrame {
 
         Customer matchedCustomer = null;
         for (Customer c : customers) {
-            if (c.getPhoneNumber().toString().startsWith(input)) {
+            if (c.getPhoneNumber().startsWith(input)) {
                 matchedCustomer = c;
                 break;
             }
@@ -243,11 +241,11 @@ public class ReservationForm extends JFrame {
             LocalDate localDate = datePicker.getDate();
             LocalTime localTime = timePicker.getTime();
 
-            int customerId = Integer.parseInt(idCust.replaceAll("\\D+", ""));
+            String customerId = idCust.trim();
 
-        if (isEditing && editingReservationId != -1) {
+        if (isEditing && editingReservationId != null) {
             for (Reservation r : reservations) {
-                if (r.getReservationId() == editingReservationId) {
+                if (r.getReservationId().equals(editingReservationId)) {
                     r.setCustomerId(customerId);
                     r.setReservationDate(localDate);
                     r.setReservationTime(localTime);
@@ -263,18 +261,19 @@ public class ReservationForm extends JFrame {
             }
             JOptionPane.showMessageDialog(this, "Reservasi berhasil diperbarui.");
         } else {
-            int reservationId = reservations.size() + 1;
+            String reservationId = String.format("R%03d", reservations.size() + 1);
+
             Reservation newRes = new Reservation(
                 reservationId, customerId, localDate, localTime, table, numPeople,
                 currentUser, null, null
             );
 
             reservations.add(newRes);
-
             reservationDAO.insertReservation(newRes);
 
             JOptionPane.showMessageDialog(this, "Reservasi berhasil disimpan.");
         }
+
 
             clearFields();
             refreshTable();
@@ -291,7 +290,7 @@ public class ReservationForm extends JFrame {
 
             Reservation toRemove = null;
             for (Reservation r : reservations) {
-                if (r.getReservationId() == resId) {
+                if (r.getReservationId().equals(resIdStr)) {
                     toRemove = r;
                     break;
                 }
@@ -326,7 +325,7 @@ public class ReservationForm extends JFrame {
         datePicker.clear();
         timePicker.clear();
         isEditing = false;
-        editingReservationId = -1;
+        editingReservationId = null;
     }
 
     private void refreshTable() {
@@ -335,14 +334,14 @@ public class ReservationForm extends JFrame {
 
         for (Reservation r : reservations) {
             String custName = "";
-            String formattedCustomerId = String.format("C%03d", r.getCustomerId());
+            String formattedCustomerId = r.getCustomerId();
             for (Customer c : customers) {
                 if (c.getId().equals(formattedCustomerId)) {
                     custName = c.getName();
                     break;
                 }
             }
-            String formattedReservationId = String.format("R%03d", r.getReservationId());
+            String formattedReservationId = r.getReservationId();
 
             // Tambahkan logika lastAction
             String lastActionBy = "-";

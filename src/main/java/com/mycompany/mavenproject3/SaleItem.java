@@ -29,5 +29,6 @@ public class SaleItem {
     public double getSubTotal() { return product.getPrice() * quantity; }
     public int getProductId() { return product.getId(); }
     public String getProductName() { return product.getName(); }
+    public Double getPrice() { return product.getPrice(); }
 
 }
