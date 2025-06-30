@@ -41,7 +41,7 @@ public class ReservationDAO {
     }
 
     public void updateReservation(Reservation r) throws SQLException {
-        String sql = "UPDATE reservation SET reservationDate=?, reservationTime=?, reservedTable=?, numberOfPeople=?, editedBy=? WHERE reservationId=?";
+        String sql = "UPDATE reservation SET reservationDate=?, reservationTime=?, reservedTable=?, numberOfPeople=?, editedBy=? WHERE reservationId=? AND deletedBy IS NULL";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setDate(1, Date.valueOf(r.getReservationDate()));
             stmt.setTime(2, Time.valueOf(r.getReservationTime()));

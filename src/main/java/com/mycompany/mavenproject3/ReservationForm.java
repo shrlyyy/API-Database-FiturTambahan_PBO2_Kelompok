@@ -40,8 +40,9 @@ public class ReservationForm extends JFrame {
     private DefaultTableModel tableModel;
 
     private ArrayList<Customer> customers;
-    private static ArrayList<Reservation> reservations = new ArrayList<>();
+    private ArrayList<Reservation> reservations = new ArrayList<>();
     private String currentUser;
+    private ReservationDAO reservationDAO;
 
     public ReservationForm(ArrayList<Customer> customers, String currentUser) {
         this.customers = customers;
@@ -112,6 +113,13 @@ public class ReservationForm extends JFrame {
         tableModel = new DefaultTableModel(new String[]{"ID Reservasi", "ID Customer", "Nama", "Tanggal", "Jam", "Meja", "Jumlah Orang", "Last Action By:"}, 0);
         reservationTable = new JTable(tableModel);
         getContentPane().add(new JScrollPane(reservationTable), BorderLayout.CENTER);
+
+        try {
+            reservationDAO = new ReservationDAO(); // mirip seperti customerDAO di CustomerForm
+            reservations = new ArrayList<>(reservationDAO.getAllReservations());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Gagal load reservasi: " + e.getMessage());
+        }
 
         // Listener untuk input realtime di phoneComboBox editable
         JTextField editor = (JTextField) phoneComboBox.getEditor().getEditorComponent();
@@ -245,9 +253,11 @@ public class ReservationForm extends JFrame {
                     r.setReservationTime(localTime);
                     r.setTable(table);
                     r.setNumberOfPeople(numPeople);
-                    r.setEditedBy(currentUser); // ← diubah
+                    r.setEditedBy(currentUser);
                     r.setCreatedBy(null);
                     r.setDeletedBy(null);
+
+                    reservationDAO.updateReservation(r);
                     break;
                 }
             }
@@ -255,17 +265,14 @@ public class ReservationForm extends JFrame {
         } else {
             int reservationId = reservations.size() + 1;
             Reservation newRes = new Reservation(
-                reservationId,
-                customerId,
-                localDate,
-                localTime,
-                table,
-                numPeople,
-                currentUser, // ← createdBy
-                null,
-                null
+                reservationId, customerId, localDate, localTime, table, numPeople,
+                currentUser, null, null
             );
+
             reservations.add(newRes);
+
+            reservationDAO.insertReservation(newRes);
+
             JOptionPane.showMessageDialog(this, "Reservasi berhasil disimpan.");
         }
 
@@ -289,7 +296,16 @@ public class ReservationForm extends JFrame {
                     break;
                 }
             }
+
             if (toRemove != null) {
+                try {
+                    String formattedId = "R" + String.format("%03d", resId);
+                    reservationDAO.deleteReservation(formattedId, currentUser);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Gagal hapus reservasi dari database: " + ex.getMessage());
+                    return;
+                }
+
                 reservations.remove(toRemove);
                 JOptionPane.showMessageDialog(this, "Reservasi berhasil dihapus.");
                 refreshTable();
@@ -299,6 +315,7 @@ public class ReservationForm extends JFrame {
             JOptionPane.showMessageDialog(this, "Pilih reservasi yang ingin dihapus.");
         }
     }
+
 
     private void clearFields() {
         ((JTextField) phoneComboBox.getEditor().getEditorComponent()).setText("");
@@ -350,7 +367,7 @@ public class ReservationForm extends JFrame {
         }
     }
 
-    public static ArrayList<Reservation> getReservations() {
+    public ArrayList<Reservation> getReservations() {
         return reservations;
     }
 }
