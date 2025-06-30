@@ -184,6 +184,7 @@ public class Mavenproject3 extends JFrame implements Runnable {
     public void updateBannerText(String newText) {
         this.text = newText;
         x = -bannerPanel.getFontMetrics(new Font("Arial", Font.BOLD, 18)).stringWidth(newText);
+        bannerPanel.repaint();
     }
 
     public static void main(String[] args) {

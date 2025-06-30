@@ -347,7 +347,7 @@ public class SellingForm extends JFrame {
             for (Product p : products) {
                 if (p.getName().equals(productName)) {
                     p.setStock(p.getStock() + qty);
-                    productForm.loadProductData(products);
+                    productForm.loadProductData();
                     updateProductFields();
                     break;
                 }
@@ -413,7 +413,7 @@ if (customerId == null) {
 
             conn.commit();
 
-            productForm.loadProductData(products);
+            productForm.loadProductData();
             updateProductFields();
 
             DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
