@@ -15,6 +15,9 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
 import java.util.ArrayList;
 import java.util.List;
 import java.awt.event.ActionEvent;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 public class SellingForm extends JFrame {
     private JComboBox<String> customerComboBox;
@@ -28,6 +31,9 @@ public class SellingForm extends JFrame {
     private JButton addToCartButton;
     private JButton deleteButton;
     private JButton checkoutButton;
+    private JTextField dateField;
+    private JTextField timeField;
+
 
     private JTable cartTable;
     private DefaultTableModel cartTableModel;
@@ -63,6 +69,15 @@ public class SellingForm extends JFrame {
 
         updateCustomerFields();
         updateProductFields();
+
+        LocalDate currentDate = LocalDate.now();
+        LocalTime currentTime = LocalTime.now();
+
+        DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm");
+
+        dateField.setText(currentDate.format(dateFormat));
+        timeField.setText(currentTime.format(timeFormat));
     }
 
     private JPanel createCustomerPanel() {
@@ -152,6 +167,16 @@ public class SellingForm extends JFrame {
         totalPriceField = new JTextField();
         totalPriceField.setEditable(false);
         summaryPanel.add(totalPriceField);
+
+        summaryPanel.add(new JLabel("Tanggal:"));
+        dateField = new JTextField();
+        dateField.setEditable(false);
+        summaryPanel.add(dateField);
+
+        summaryPanel.add(new JLabel("Waktu:"));
+        timeField = new JTextField();
+        timeField.setEditable(false);
+        summaryPanel.add(timeField);
 
         checkoutButton = new JButton("Checkout");
         checkoutButton.addActionListener(this::checkout);
@@ -318,16 +343,33 @@ public class SellingForm extends JFrame {
             int qty = item.getQuantity();
             p.setStock(p.getStock() - qty);
         }
+
         productForm.loadProductData(products);
         updateProductFields();
 
+        LocalDate tanggalPesan = LocalDate.now();
+        LocalTime waktuPesan = LocalTime.now();
+
+        DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm");
+
+        String tanggalStr = tanggalPesan.format(dateFormat);
+        String waktuStr = waktuPesan.format(timeFormat);
+
+        dateField.setText(tanggalStr);
+        timeField.setText(waktuStr);
+
         String customerPhone = (String) customerComboBox.getSelectedItem();
         String customerName = nameField.getText();
-        String message = "Checkout berhasil untuk " + customerName + " (" + customerPhone + ")!\nTotal: " + totalPriceField.getText();
+        String message = "Checkout berhasil untuk " + customerName + " (" + customerPhone + ")!\n"
+            + "Tanggal: " + tanggalStr + "\n"
+            + "Waktu: " + waktuStr + "\n"
+            + "Total: " + totalPriceField.getText();
         JOptionPane.showMessageDialog(this, message);
 
         cartItems.clear();
         cartTableModel.setRowCount(0);
         updateTotal();
     }
+
 }

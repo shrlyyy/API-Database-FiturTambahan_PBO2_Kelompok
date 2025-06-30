@@ -91,7 +91,6 @@ public class Mavenproject3 extends JFrame implements Runnable {
             sellingForm.setVisible(true);
         });
 
-
         reservationButton.addActionListener(e -> {
             ReservationForm reservationForm = new ReservationForm(sharedCustomers, currentUser.getUsername());
             reservationForm.setVisible(true);
